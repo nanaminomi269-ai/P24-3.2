@@ -1,4 +1,4 @@
-<img width="572" height="479" alt="Снимок экрана 2026-11-09 192239" src="https://github.com/user-attachments/assets/bc6f8239-e66a-4aa3-8aad-dfd5931d26df" />
+
 ---
 title: "Практическая работа №7: Основные типы данных и  безопасность типов в Dart"
 discipline: "Разработка мобильных приложений"
