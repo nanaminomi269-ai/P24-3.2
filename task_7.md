@@ -168,7 +168,7 @@ void main() {
 
 
 
-<img width="1106" height="544" alt="Снимок экрана 2026-11-09 192336" src="https://github.com/user-attachments/assets/eb044d6e-dfda-459b-a96b-9ca24ddef583" />
+
 <img width="1126" height="544" alt="Снимок экрана 2026-11-09 192320" src="https://github.com/user-attachments/assets/28b69063-c635-4575-b4c0-f5fb8396e637" />
 
 ---
