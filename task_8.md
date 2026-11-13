@@ -127,6 +127,48 @@ void main() {
 4. **Валидатор пароля в сеттере:** Класс `UserCredentials` с приватным паролем `_passwordHash`. Сеттер принимает сырую строку, проверяет ее длину (\(\ge 8\) символов) и сохраняет псевдо-хэш.
 5. **Статический счетчик экземпляров:** Добавьте в класс `DeviceSession` статическое поле `static int activeSessionsCount`, которое увеличивается при создании каждого нового объекта.
 
+class Thermostat {
+  double _temperature = 20;
+  double get fahrenheit => _temperature * 9 / 5 + 32;
+  double get celsius => _temperature;
+  set celsius(double value) {
+    if (value >= -50 && value <= 100) _temperature = value;
+  }
+}
+
+class Pedometer {
+  int _steps = 0;
+  int get steps => _steps;
+  void addSteps(int count) {
+    if (count > 0) _steps += count;
+  }
+}
+
+class Book {
+  String title;
+  int pages;
+  Book(this.title, this.pages);
+  double get estimatedReadingHours => pages * 2 / 60;
+}
+
+class UserCredentials {
+  String _passwordHash = '';
+  set password(String value) {
+    if (value.length >= 8) _passwordHash = 'HASH_${value.hashCode}';
+  }
+  String get passwordHash => _passwordHash;
+}
+
+class DeviceSession {
+  static int activeSessionsCount = 0;
+  DeviceSession() { activeSessionsCount++; }
+  void close() {
+    if (activeSessionsCount > 0) activeSessionsCount--;
+  }
+}
+
+void main() {}
+
 ---
 
 ## Тема 2. Все виды конструкторов: Named, Initializer List, Factory, Const
@@ -199,6 +241,48 @@ class UserModel {
 4. **Фабричный синглтон сетевого клиента:** Реализуйте класс `ApiClient` с фабричным конструктором `factory ApiClient()`, гарантированно возвращающим один и тот же приватный экземпляр.
 5. **Редирект конструктора (Redirecting constructor):** Напишите класс `Circle(this.radius)` и именованный конструктор `Circle.unit() : this(1.0);`, перенаправляющий вызов на основной.
 
+
+class AppColor {
+  final int r, g, b;
+  final double opacity;
+  const AppColor(this.r, this.g, this.b, [this.opacity = 1]);
+
+  factory AppColor.fromHex(String hex) {
+    final c = int.parse(hex.replaceAll('#', ''), radix: 16);
+    return AppColor((c >> 16) & 255, (c >> 8) & 255, c & 255);
+  }
+
+  factory AppColor.fromRGBO(int r, int g, int b, double o) =>
+      AppColor(r, g, b, o);
+}
+
+class Point2D {
+  final double x, y;
+  const Point2D(this.x, this.y);
+}
+
+class Rectangle {
+  final double width, height;
+  Rectangle(this.width, this.height)
+      : assert(width > 0 && height > 0);
+  double get area => width * height;
+}
+
+class ApiClient {
+  static final ApiClient _instance = ApiClient._();
+  factory ApiClient() => _instance;
+  ApiClient._();
+}
+
+class Circle {
+  final double radius;
+  Circle(this.radius);
+  Circle.unit() : this(1);
+  double get area => 3.14159 * radius * radius;
+}
+
+void main() {}
+
 ---
 
 ## Тема 3. Наследование (extends), полиморфизм и super
@@ -268,6 +352,82 @@ class SettingsScreen extends BaseScreen {
 4. **Ковариантный параметр метода (`covariant`):** Покажите пример сужения типа аргумента в переопределенном методе подкласса с помощью ключевого слова `covariant`.
 5. **Предотвращение переопределения через `@nonVirtual`:** Создайте метод критической проверки лицензии в базовом классе и запретите его изменение в наследниках.
 
+import 'package:meta/meta.dart';
+
+class Card {
+  double balance;
+  Card(this.balance);
+}
+
+class DebitCard extends Card {
+  DebitCard(super.balance);
+  bool pay(double amount) {
+    if (amount > 0 && amount <= balance) {
+      balance -= amount;
+      return true;
+    }
+    return false;
+  }
+}
+
+class CreditCard extends Card {
+  final double limit;
+  CreditCard(super.balance, this.limit);
+  bool pay(double amount) {
+    if (amount > 0 && amount <= balance + limit) {
+      balance -= amount;
+      return true;
+    }
+    return false;
+  }
+}
+
+abstract class BaseScreen {
+  void render();
+}
+
+class HomeScreen extends BaseScreen {
+  @override
+  void render() {}
+}
+
+class SettingsScreen extends BaseScreen {
+  @override
+  void render() {}
+}
+
+class BaseClass {
+  final int id;
+  final String title;
+  BaseClass({required this.id, this.title = ''});
+}
+
+class SubClass extends BaseClass {
+  SubClass({required super.id, super.title});
+}
+
+class Animal {}
+class Cat extends Animal {}
+
+class AnimalHandler {
+  void accept(Animal animal) {}
+}
+
+class CatHandler extends AnimalHandler {
+  @override
+  void accept(covariant Cat animal) {}
+}
+
+class License {
+  @nonVirtual
+  bool checkLicense() => true;
+}
+
+class AppLicense extends License {}
+
+void main() {}
+
+
 ---
 
 ## Тема 4. Абстрактные классы, неявные интерфейсы (implements) и Sealed-классы
@@ -320,6 +480,63 @@ String renderStateUi(CatalogState state) {
 3. **Sealed-иерархия авторизации:** Создайте `sealed class AuthState` с наследниками `Unauthenticated`, `Authenticating`, `Authenticated(User user)` и `AuthFailed(String reason)`.
 4. **Модификатор `base class`:** Создайте класс `base class Engine`, гарантирующий, что сторонние библиотеки смогут только наследовать его (`extends`), но не смогут реализовать его как чистый интерфейс (`implements`).
 5. **Модификатор `interface class`:** Создайте чистый интерфейсный контракт, исключающий прямое наследование реализации вне родной библиотеки.
+
+abstract class StorageService {
+  void save(String key, String val);
+  String? read(String key);
+  void delete(String key);
+}
+
+class MemoryStorageService implements StorageService {
+  final Map<String, String> data = {};
+  @override
+  void save(String key, String val) => data[key] = val;
+  @override
+  String? read(String key) => data[key];
+  @override
+  void delete(String key) => data.remove(key);
+}
+
+abstract class Displayable { void display(); }
+abstract class NetworkConnectable { void connect(); }
+
+class SmartTv implements Displayable, NetworkConnectable {
+  @override
+  void display() {}
+  @override
+  void connect() {}
+}
+
+class User {}
+
+sealed class AuthState {}
+class Unauthenticated extends AuthState {}
+class Authenticating extends AuthState {}
+class Authenticated extends AuthState {
+  final User user;
+  Authenticated(this.user);
+}
+class AuthFailed extends AuthState {
+  final String reason;
+  AuthFailed(this.reason);
+}
+
+base class Engine {
+  void start() {}
+}
+class Car extends Engine {}
+
+interface class PaymentService {
+  void pay() {}
+}
+class MyPayment implements PaymentService {
+  @override
+  void pay() {}
+}
+
+void main() {}
+
+
 
 ---
 
@@ -381,6 +598,45 @@ class EmailInput extends FormElement with LoggingMixin, ValidationMixin {
 4. **Порядок линеаризации миксинов:** Создайте класс с двумя миксинами, реализующими одинаковый метод `execute()`. Покажите на практике, метод какого миксина выполнится первым (принцип правого приоритета).
 5. **Миксин кэширования вычислений:** Создайте миксин `MemoizationMixin`, сохраняющий результаты тяжелых математических функций в словарь по строковому ключу аргументов.
 
+import 'package:flutter/foundation.dart';
+
+mixin JsonPrintable {
+  String printAsJson() => toString();
+}
+class Product with JsonPrintable {}
+
+mixin AutoDisposer on ChangeNotifier {
+  bool isDisposed = false;
+  @override
+  void dispose() {
+    isDisposed = true;
+    super.dispose();
+  }
+}
+
+mixin AnalyticsTracker {
+  void trackEvent(String eventName) {}
+}
+class CustomButton with AnalyticsTracker {}
+
+mixin First {
+  String execute() => 'First';
+}
+mixin Second {
+  String execute() => 'Second';
+}
+class Example with First, Second {}
+
+mixin MemoizationMixin {
+  final Map<String, double> _cache = {};
+  double calculate(String key, double Function() function) =>
+      _cache.putIfAbsent(key, function);
+}
+
+void main() {}
+
+
+
 ---
 
 ## 50 Смешанных заданий по ООП
@@ -400,6 +656,91 @@ class EmailInput extends FormElement with LoggingMixin, ValidationMixin {
 9. **Парсер конфигурации окружения (Environment):** Фабричный конструктор `EnvConfig.fromEnvironment()`, читающий флаги через `const String.fromEnvironment()`.
 10. **Кастомный оператор эквивалентности:** Переопределите оператор `==` и метод `hashCode` для класса `CartItem` на основе совпадения полей `productId` и `selectedSize`.
 
+class Product {
+  final String name;
+  final double price, discount;
+  const Product(this.name, this.price, this.discount) : assert(price >= 0);
+  double get discountedPrice => price * (1 - discount / 100);
+}
+
+class User {
+  final String name;
+  final int age;
+  User(this.name, this.age);
+  factory User.fromJson(Map<String, dynamic> json) => User(
+    json['name'] is String ? json['name'] as String : '',
+    json['age'] is int ? json['age'] as int : 0,
+  );
+}
+
+class AppLocale {
+  static final Map<String, AppLocale> _cache = {};
+  final String language;
+  factory AppLocale(String language) =>
+      _cache.putIfAbsent(language, () => AppLocale._(language));
+  AppLocale._(this.language);
+}
+
+class GeoPoint {
+  final double latitude, longitude;
+  GeoPoint(this.latitude, this.longitude);
+  GeoPoint.fromString(String value)
+      : latitude = double.parse(value.split(',')[0].trim()),
+        longitude = double.parse(value.split(',')[1].trim());
+}
+
+class ContactCard {
+  final String name, phone;
+  ContactCard(this.name, this.phone);
+  factory ContactCard.fromDatabaseRecord(Map<String, Object?> row) =>
+      ContactCard(row['name'] as String, row['phone'] as String);
+}
+
+class UserModel {
+  final String name, avatarUrl;
+  UserModel(this.name, this.avatarUrl);
+  UserModel copyWith({String? name, String? avatarUrl}) =>
+      UserModel(name ?? this.name, avatarUrl ?? this.avatarUrl);
+}
+
+class DateRange {
+  final DateTime start, end;
+  DateRange(this.start, this.end) : assert(!end.isBefore(start));
+}
+
+class TransactionDto {
+  final String type;
+  final double amount;
+  final String? recipient;
+  TransactionDto.deposit(this.amount) : type = 'deposit', recipient = null;
+  TransactionDto.withdrawal(this.amount) : type = 'withdrawal', recipient = null;
+  TransactionDto.transfer(this.amount, this.recipient) : type = 'transfer';
+}
+
+class EnvConfig {
+  final String apiUrl;
+  final bool debug;
+  EnvConfig.fromEnvironment()
+      : apiUrl = const String.fromEnvironment('API_URL'),
+        debug = const bool.fromEnvironment('DEBUG');
+}
+
+class CartItem {
+  final int productId;
+  final String selectedSize;
+  CartItem(this.productId, this.selectedSize);
+  @override
+  bool operator ==(Object other) =>
+      other is CartItem &&
+      productId == other.productId &&
+      selectedSize == other.selectedSize;
+  @override
+  int get hashCode => Object.hash(productId, selectedSize);
+}
+
+void main() {}
+
+
 ### Блок 2: Наследование и иерархия UI-компонентов
 
 11. **Иерархия системных уведомлений:** Базовый класс `InAppNotification` (таймаут, заголовок) и наследники `SuccessNotification`, `WarningNotification`, `CriticalAlertNotification` с разным цветом и иконкой.
@@ -412,6 +753,147 @@ class EmailInput extends FormElement with LoggingMixin, ValidationMixin {
 18. **Экраны онбординга:** Базовый экран обучающего тура с кнопкой пропуска и конкретные шаги с уникальными иллюстрациями.
 19. **Кастомная кнопка с состояниями:** Базовый класс `WidgetButton` и подкласс `AsyncLoadingButton`, отображающий индикатор загрузки при активном асинхронном действии.
 20. **Иерархия логгеров приложения:** Базовый класс `AppLogger` и подклассы `ConsoleLogger` (форматированный вывод в терминал) и `FileCrashLogger` (запись на диск).
+
+class InAppNotification {
+  final int timeout;
+  final String title;
+  InAppNotification(this.title, this.timeout);
+}
+class SuccessNotification extends InAppNotification {
+  SuccessNotification(super.title, super.timeout);
+  String get color => 'green';
+  String get icon => 'check';
+}
+class WarningNotification extends InAppNotification {
+  WarningNotification(super.title, super.timeout);
+  String get color => 'yellow';
+  String get icon => 'warning';
+}
+class CriticalAlertNotification extends InAppNotification {
+  CriticalAlertNotification(super.title, super.timeout);
+  String get color => 'red';
+  String get icon => 'error';
+}
+
+abstract class BaseDialog {
+  void header();
+  void footer();
+}
+class ConfirmActionDialog extends BaseDialog {
+  @override
+  void header() {}
+  @override
+  void footer() {}
+  void confirm() {}
+  void cancel() {}
+}
+
+abstract class MediaPlayer {
+  void play();
+  void pause();
+  void seek(int position);
+}
+class AudioPlayer extends MediaPlayer {
+  @override
+  void play() {}
+  @override
+  void pause() {}
+  @override
+  void seek(int position) {}
+}
+class HlsVideoPlayer extends AudioPlayer {}
+
+class HardwareSensor {}
+class AccelerometerSensor extends HardwareSensor {
+  final double x, y, z;
+  AccelerometerSensor(this.x, this.y, this.z);
+}
+class BarometerSensor extends HardwareSensor {
+  final double pressure;
+  BarometerSensor(this.pressure);
+}
+
+class SubscriptionPlan {
+  final double price;
+  SubscriptionPlan(this.price);
+}
+class MonthlyPlan extends SubscriptionPlan {
+  MonthlyPlan(super.price);
+}
+class AnnualDiscountPlan extends SubscriptionPlan {
+  AnnualDiscountPlan(double price) : super(price * 12 * 0.8);
+}
+class FamilyPlan extends SubscriptionPlan {
+  FamilyPlan(double price, int members) : super(price * members);
+}
+
+class CanvasLayer {
+  double opacity;
+  bool visible;
+  int zIndex;
+  CanvasLayer(this.opacity, this.visible, this.zIndex);
+}
+class VectorLayer extends CanvasLayer {
+  VectorLayer(super.opacity, super.visible, super.zIndex);
+}
+class RasterBitmapLayer extends CanvasLayer {
+  RasterBitmapLayer(super.opacity, super.visible, super.zIndex);
+}
+class TextLayer extends CanvasLayer {
+  TextLayer(super.opacity, super.visible, super.zIndex);
+}
+
+abstract class PaymentGateway {
+  void log(String message) {}
+  void pay(double amount);
+}
+class SbpGateway extends PaymentGateway {
+  @override
+  void pay(double amount) {}
+}
+class BankCardGateway extends PaymentGateway {
+  @override
+  void pay(double amount) {}
+}
+
+class OnboardingScreen {
+  final String illustration;
+  OnboardingScreen(this.illustration);
+  void skip() {}
+}
+class WelcomeScreen extends OnboardingScreen {
+  WelcomeScreen() : super('welcome.png');
+}
+class FeaturesScreen extends OnboardingScreen {
+  FeaturesScreen() : super('features.png');
+}
+
+class WidgetButton {
+  void onPressed() {}
+}
+class AsyncLoadingButton extends WidgetButton {
+  bool isLoading = false;
+  Future<void> run(Future<void> Function() action) async {
+    isLoading = true;
+    try { await action(); } finally { isLoading = false; }
+  }
+}
+
+abstract class AppLogger {
+  void log(String message);
+}
+class ConsoleLogger extends AppLogger {
+  @override
+  void log(String message) {}
+}
+class FileCrashLogger extends AppLogger {
+  @override
+  void log(String message) {}
+}
+
+void main() {}
+
+
 
 ### Блок 3: Абстрактные контракты, интерфейсы и репозитории
 
@@ -426,6 +908,119 @@ class EmailInput extends FormElement with LoggingMixin, ValidationMixin {
 29. **Хранилище ключ-значение (KeyValueStorage):** Спроектируйте интерфейс с обобщенными методами `T? read<T>(String key)` и `Future<void> write<T>(String key, T value)`.
 30. **Интерфейс экспортера отчетов:** Контракт `ReportExporter` с реализациями `PdfReportExporter` и `ExcelReportExporter`.
 
+class Product {
+  final int id;
+  Product(this.id);
+}
+
+abstract class ProductRepository {
+  Future<List<Product>> getAll();
+  Future<Product> getById(int id);
+}
+class NetworkProductRepository implements ProductRepository {
+  @override
+  Future<List<Product>> getAll() async => [];
+  @override
+  Future<Product> getById(int id) async => Product(id);
+}
+class MockProductRepository implements ProductRepository {
+  final List<Product> products;
+  MockProductRepository(this.products);
+  @override
+  Future<List<Product>> getAll() async => products;
+  @override
+  Future<Product> getById(int id) async =>
+      products.firstWhere((p) => p.id == id);
+}
+
+abstract class BiometricAuthService {
+  Future<bool> canAuthenticate();
+  Future<bool> authenticate();
+}
+class FakeBiometricAuth implements BiometricAuthService {
+  @override
+  Future<bool> canAuthenticate() async => true;
+  @override
+  Future<bool> authenticate() async => true;
+}
+
+abstract class CryptoService {
+  String encrypt(String plainText);
+  String decrypt(String cipherText);
+}
+class AesCryptoService implements CryptoService {
+  @override
+  String encrypt(String plainText) => plainText;
+  @override
+  String decrypt(String cipherText) => cipherText;
+}
+
+abstract class AnalyticsProvider {
+  void logEvent(String name, Map<String, Object> params);
+}
+class CompositeAnalyticsProvider implements AnalyticsProvider {
+  final List<AnalyticsProvider> providers;
+  CompositeAnalyticsProvider(this.providers);
+  @override
+  void logEvent(String name, Map<String, Object> params) {
+    for (final provider in providers) {
+      provider.logEvent(name, params);
+    }
+  }
+}
+
+class GeoPoint {
+  final double lat, lon;
+  GeoPoint(this.lat, this.lon);
+}
+abstract class GeolocatorService {
+  Future<GeoPoint> getPosition();
+  Stream<GeoPoint> get positionStream;
+}
+
+abstract class NotificationSender {
+  void send(String message);
+  void schedule(String message, DateTime date);
+}
+class LocalNotificationSender implements NotificationSender {
+  @override
+  void send(String message) {}
+  @override
+  void schedule(String message, DateTime date) {}
+}
+
+abstract class DataSyncEngine {
+  Future<void> fetchRemoteDelta();
+  Future<void> applyLocalChanges();
+}
+
+abstract class ConnectivityService {
+  bool get isOnline;
+  Stream<void> get connectionLost;
+}
+
+abstract class KeyValueStorage {
+  T? read<T>(String key);
+  Future<void> write<T>(String key, T value);
+}
+
+abstract class ReportExporter {
+  void export(String data);
+}
+class PdfReportExporter implements ReportExporter {
+  @override
+  void export(String data) {}
+}
+class ExcelReportExporter implements ReportExporter {
+  @override
+  void export(String data) {}
+}
+
+void main() {}
+
+
+
+
 ### Блок 4: Миксины и повторное использование функционала
 
 31. **Миксин дебаунса событий (Anti-Spam Click):** Миксин `DebounceMixin`, предотвращающий повторный вызов одного и того же действия чаще чем раз в 500 мс.
@@ -438,6 +1033,78 @@ class EmailInput extends FormElement with LoggingMixin, ValidationMixin {
 38. **Миксин переключения темы:** Миксин, предоставляющий экрану быстрый доступ к текущей цветовой палитре (темная/светлая).
 39. **Миксин глубоких ссылок (DeepLinkHandlerMixin):** Миксин, парсящий входящие URI-схемы приложения и открывающий целевые экраны.
 40. **Миксин аудита действий администратора:** Подмешиваемый модуль, отправляющий критические действия модератора на выделенный сервер безопасности.
+
+import 'dart:async';
+
+mixin DebounceMixin {
+  final Map<String, DateTime> _times = {};
+  bool canRun(String key) {
+    final now = DateTime.now();
+    final last = _times[key];
+    if (last != null && now.difference(last).inMilliseconds < 500) {
+      return false;
+    }
+    _times[key] = now;
+    return true;
+  }
+}
+
+mixin RestorationMixin {
+  final Map<String, String> saved = {};
+  void save(String key, String value) => saved[key] = value;
+  String? restore(String key) => saved[key];
+}
+
+mixin NetworkAwareMixin {
+  bool isOnline = true;
+  Future<void> request(Future<void> Function() action) async {
+    if (isOnline) await action();
+  }
+}
+
+mixin CurrencyFormatterMixin {
+  String formatCurrency(double value) => '${value.toStringAsFixed(2)} ₽';
+}
+
+mixin PeriodicRefreshMixin {
+  Timer? _timer;
+  void startRefresh(void Function() refresh) {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => refresh());
+  }
+  void stopRefresh() {
+    _timer?.cancel();
+    _timer = null;
+  }
+}
+
+mixin PassportValidationMixin {
+  bool validSeries(String value) => RegExp(r'^\\d{4}$').hasMatch(value);
+  bool validNumber(String value) => RegExp(r'^\\d{6}$').hasMatch(value);
+  bool validCode(String value) => RegExp(r'^\\d{3}-\\d{3}$').hasMatch(value);
+}
+
+mixin FadeAnimationController {
+  double opacity = 1;
+  void setOpacity(double value) => opacity = value.clamp(0.0, 1.0);
+}
+
+mixin ThemeMixin {
+  bool isDark = false;
+  String get background => isDark ? 'black' : 'white';
+}
+
+mixin DeepLinkHandlerMixin {
+  String? handleLink(String link) => Uri.tryParse(link)?.path;
+}
+
+mixin AdminAuditMixin {
+  void audit(String action, void Function(String) send) => send(action);
+}
+
+void main() {}
+
+
 
 ### Блок 5: Современные модификаторы классов и архитектурные стейты
 
@@ -455,5 +1122,147 @@ class EmailInput extends FormElement with LoggingMixin, ValidationMixin {
     - Создайте класс заказа `TaxiOrder` с именованными фабричными конструкторами и списком инициализации.
     - Реализуйте миксины `LocationTrackingMixin` и `FareCalculationMixin`.
     - Напишите контроллер управления поездкой с исчерпывающим сопоставлением с шаблонами.
+
+class Item {}
+
+sealed class CartState {}
+class CartEmpty extends CartState {}
+class CartLoading extends CartState {}
+class CartLoaded extends CartState {
+  final List<Item> items;
+  final double total;
+  CartLoaded(this.items, this.total);
+}
+class CartCheckoutError extends CartState {
+  final String error;
+  CartCheckoutError(this.error);
+}
+String handleCart(CartState state) => switch (state) {
+  CartEmpty() => 'empty',
+  CartLoading() => 'loading',
+  CartLoaded() => 'loaded',
+  CartCheckoutError() => 'error',
+};
+
+sealed class Result<T> {}
+class Success<T> extends Result<T> {
+  final T data;
+  Success(this.data);
+}
+class Failure<T> extends Result<T> {
+  final Exception exception;
+  Failure(this.exception);
+}
+
+sealed class LoginEvent {}
+class LoginEmailChanged extends LoginEvent {
+  final String email;
+  LoginEmailChanged(this.email);
+}
+class LoginPasswordChanged extends LoginEvent {
+  final String pass;
+  LoginPasswordChanged(this.pass);
+}
+class LoginSubmitted extends LoginEvent {}
+
+final class EncryptionKey {
+  final String value;
+  EncryptionKey(this.value);
+}
+
+interface class PaymentTerminal {
+  void pay(double amount) {}
+}
+class MyTerminal implements PaymentTerminal {
+  @override
+  void pay(double amount) {}
+}
+
+sealed class AppRoute {}
+class HomeRoute extends AppRoute {}
+class ProfileRoute extends AppRoute {}
+class SettingsRoute extends AppRoute {}
+String routeName(AppRoute route) => switch (route) {
+  HomeRoute() => '/home',
+  ProfileRoute() => '/profile',
+  SettingsRoute() => '/settings',
+};
+
+abstract class Command {
+  void execute();
+  void undo();
+}
+class TextCommand extends Command {
+  String text = '';
+  @override
+  void execute() => text = 'New text';
+  @override
+  void undo() => text = '';
+}
+
+class NotificationBuilder {
+  String title = '', body = '', icon = '';
+  NotificationBuilder setTitle(String value) { title = value; return this; }
+  NotificationBuilder setBody(String value) { body = value; return this; }
+  NotificationBuilder setIcon(String value) { icon = value; return this; }
+  Map<String, String> build() =>
+      {'title': title, 'body': body, 'icon': icon};
+}
+
+class EventBus {
+  final Map<int, void Function(Object)> _listeners = {};
+  int _id = 0;
+  int subscribe<T>(void Function(T) callback) {
+    final id = ++_id;
+    _listeners[id] = (event) {
+      if (event is T) callback(event);
+    };
+    return id;
+  }
+  void unsubscribe(int id) => _listeners.remove(id);
+  void publish(Object event) {
+    for (final listener in _listeners.values.toList()) {
+      listener(event);
+    }
+  }
+}
+
+class Location {
+  final double lat, lon;
+  Location(this.lat, this.lon);
+}
+sealed class TaxiOrderState {}
+class Searching extends TaxiOrderState {}
+class Assigned extends TaxiOrderState {}
+class InTrip extends TaxiOrderState {}
+class Completed extends TaxiOrderState {}
+class Cancelled extends TaxiOrderState {}
+
+mixin LocationTrackingMixin {
+  Location? location;
+}
+mixin FareCalculationMixin {
+  double calculateFare(double distance) => distance * 10;
+}
+class TaxiOrder with LocationTrackingMixin, FareCalculationMixin {
+  final String id;
+  final TaxiOrderState state;
+  TaxiOrder(this.id, this.state);
+  factory TaxiOrder.searching(String id) => TaxiOrder(id, Searching());
+  factory TaxiOrder.assigned(String id) => TaxiOrder(id, Assigned());
+  factory TaxiOrder.inTrip(String id) => TaxiOrder(id, InTrip());
+  factory TaxiOrder.completed(String id) => TaxiOrder(id, Completed());
+  factory TaxiOrder.cancelled(String id) => TaxiOrder(id, Cancelled());
+}
+String orderStatus(TaxiOrderState state) => switch (state) {
+  Searching() => 'searching',
+  Assigned() => 'assigned',
+  InTrip() => 'in trip',
+  Completed() => 'completed',
+  Cancelled() => 'cancelled',
+};
+
+void main() {}
+
 
 ---
